@@ -1,0 +1,419 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %} {% if search %}搜索图片: {{ search }}{% else %}全部图片
+{% endif %} {% endblock title %}
+{% block content %}
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card mb-4">
+                    <div class="card-header pb-0">
+                        <h6>{% if search %}搜索图片: {{ search }}{% else %}
+                            全部图片{% endif %}
+                            (<span id="post-number">{{ post_number }}</span>张)
+                            <a href="javascript:show_upload()" class="text-primary text-lg">
+                                <i class="fa-solid fa-plus"></i>
+                            </a>
+                        </h6>
+                    </div>
+                    <div class="card-body px-0 pt-0 pb-2">
+                        <div class="table-responsive p-0">
+                            <table class="table align-items-center mb-0">
+                                <thead>
+                                <tr>
+                                    <th class="text-secondary text-xxs font-weight-bolder opacity-7">
+                                        <span class="px-1 text-secondary">图片名</span>
+                                    </th>
+                                    <th class="text-secondary text-xxs font-weight-bolder opacity-7">
+                                        <span class="text-secondary">大小</span>
+                                    </th>
+                                    <th class="text-secondary text-xxs font-weight-bolder opacity-7">
+                                        <span class="text-secondary">时间</span>
+                                    </th>
+                                    <th class="text-center text-secondary text-xxs
+                                    font-weight-bolder opacity-7">
+                                        <span class="text-secondary">操作</span>
+                                    </th>
+                                </tr>
+                                </thead>
+                                <tbody id="posts-list">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer py-4">
+                        <ul class="pagination justify-content-end mb-0">
+                            <li class="page-item" id="prev-page">
+                                <a class="page-link"
+                                   href="javascript:prev_page()">
+                                    <i class="fas fa-angle-left"></i>
+                                    <span class="sr-only">上一页</span>
+                                </a>
+                            </li>
+                            {% for i in page_number|get_range %}
+                                <li class="page-item" id="page-{{ i }}">
+                                    <a class="page-link"
+                                       href="javascript:change_page({{ i }})">{{ i }}</a>
+                                </li>
+                            {% endfor %}
+
+                            <li class="page-item" id="next-page">
+                                <a class="page-link"
+                                   href="javascript:next_page()">
+                                    <i class="fas fa-angle-right"></i>
+                                    <span class="sr-only">下一页</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% include "includes/footer.html" %}
+
+    </div>
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel"
+         aria-hidden="false">
+        <div class="modal-dialog">
+            <div class="modal-content bg-white">
+                <div class="modal-header" style="border: none;">
+                    <h5 class="modal-title fs-5" id="deleteModalLabel">提示</h5>
+                    <button type="button" data-bs-dismiss="modal"
+                            aria-label="Close" style="box-sizing: content-box;width: 1em;height:
+                            1em;padding: .25em;color: #8392ab;border: 0;border-radius: .375rem;
+                            opacity: .5;background: none">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    确认要删除 <a id="delfile"></a> 吗？此操作不可撤回
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" id="checkSync"
+                               checked>
+                        <label class="custom-control-label" for="checkSync">删除远程文件</label>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border: none;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="delete_file()"
+                            data-bs-dismiss="modal">确定
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel"
+         aria-hidden="false">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-white">
+                <div class="modal-header" style="border: none;">
+                    <h5 class="modal-title fs-5" id="uploadModalLabel">上传</h5>
+                    <button type="button" data-bs-dismiss="modal"
+                            aria-label="Close" style="box-sizing: content-box;width: 1em;height:
+                            1em;padding: .25em;color: #8392ab;border: 0;border-radius: .375rem;
+                            opacity: .5;background: none">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="imageInput" class="form-label">上传图片</label>
+                            <input type="file" class="form-control" id="imageInput" name="file">
+                        </div>
+                    </form>
+                    <div id="showurl"></div>
+                </div>
+                <div class="modal-footer" style="border: none;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <div id="uploadButton">
+                        <button type="button" class="btn btn-primary" onclick="upload_file()" >上传</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock content %}
+
+<!-- Specific JS goes HERE -->
+{% block javascripts %}
+
+    <script>
+        var posts = {{ posts|safe }};
+        var _page = 1;
+        var del_file;
+
+        function change_page(page) {
+            scrollToTop();
+            let color = checkIfDark() ? "text-white" : "text-dark";
+            let post_temp = `<tr>
+                                <td>
+                                    <div class="d-flex px-4 py-1">
+                                        <h6 class="mb-0 text-sm">@@name@@</h6>
+                                        <a href="@@url@@" target="_blank">&nbsp<i class="fa
+                                            fa-external-link-alt text-primary"></i></a>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="text-xs font-weight-bold opacity-8
+                                    ${color}">@@size@@</span>
+                                </td>
+                                <td>
+                                    <span class="text-xs font-weight-bold opacity-8
+                                    ${color}">@@date@@</span>
+                                </td>
+                                <td class="align-middle text-center">
+                                    <a href="javascript:query_delete('@@name@@','@@time@@')"><i
+                                    class="fa fa-trash-alt me-2 text-primary text-xxs"></i></a>
+                                </td>
+                            </tr>`;
+            let page_posts;
+            if (posts.length > page * 15 + 1) {
+                page_posts = posts.slice(15 * (page - 1), page * 15);
+            } else {
+                page_posts = posts.slice(15 * (page - 1));
+            }
+            let list = "";
+            for (let i = 0; i < page_posts.length; i++) {
+                list += post_temp.replaceAll("@@name@@", excerpt_by_local(page_posts[i].name, 50))
+                    .replaceAll("@@size@@", page_posts[i].size)
+                    .replaceAll("@@time@@", page_posts[i].time)
+                    .replaceAll("@@date@@", page_posts[i].date)
+                    .replaceAll("@@url@@", page_posts[i].url);
+            }
+            $("#page-" + _page).removeClass("active");
+            $("#page-" + _page).children().removeClass("text-white");
+            $("#page-" + page).addClass("active");
+            $("#page-" + page).children().addClass("text-white");
+            $("#posts-list").html(list);
+            _page = page;
+            if (page <= 1) {
+                $("#prev-page").addClass("disabled");
+            } else {
+                $("#prev-page").removeClass("disabled");
+            }
+            if (page >={{ page_number }}) {
+                $("#next-page").addClass("disabled");
+            } else {
+                $("#next-page").removeClass("disabled");
+            }
+        }
+
+        function prev_page() {
+            if (_page > 1) {
+                change_page(_page - 1);
+            } else {
+                notyf.error("已是第一页");
+            }
+        }
+
+        function next_page() {
+            if (_page <{{ page_number }}) {
+                change_page(_page + 1);
+            } else {
+                notyf.error("已是最后一页");
+            }
+        }
+
+        change_page(1);
+
+        $.ajaxSetup({
+            data: {csrfmiddlewaretoken: '{{ csrf_token }}'},
+        });
+
+
+        function query_delete(name, time) {
+            del_file = time;
+            $("#delfile").text(name);
+            $("#deleteModal").modal("show");
+        }
+
+
+        function delete_file() {
+            let loading = new KZ_Loading('正在删除中...');
+            loading.show();
+            $.ajax({
+                url: '/api/delete_img/',
+                method: 'post',
+                data: {"image": del_file, "sync": $("#checkSync").prop('checked')},
+                dataType: 'JSON',
+                success: function (res) {
+                    loading.destroy();
+                    if (res.status) {
+                        notyf.success(escapeString(res.msg));
+                        for (let i = 0; i < posts.length; i++) {
+                            if (posts[i]["time"] === del_file) {
+                                posts.splice(i, 1);
+                                $("#post-number").html(posts.length);
+                                break;
+                            }
+                        }
+                        change_page(_page);
+                    } else {
+                        notyf.error(res.msg);
+                    }
+                },
+                error: function (res) {
+                    loading.destroy();
+                    notyf.error("网络错误！");
+                }
+            })
+        }
+
+        function DrawImage(ImgD, FitWidth, FitHeight) {
+            let image = new Image();
+            image.src = ImgD.src;
+            if (image.width > 0 && image.height > 0) {
+                if (image.width <= 260 && image.height <= 260) {
+                    return;
+                }
+                if (image.width / image.height >= FitWidth / FitHeight) {
+                    if (image.width > FitWidth) {
+                        ImgD.width = FitWidth;
+                        ImgD.height = (image.height * FitWidth) / image.width;
+                    } else {
+                        ImgD.width = image.width;
+                        ImgD.height = image.height;
+                    }
+                } else {
+                    if (image.height > FitHeight) {
+                        ImgD.height = FitHeight;
+                        ImgD.width = (image.width * FitHeight) / image.height;
+                    } else {
+                        ImgD.width = image.width;
+                        ImgD.height = image.height;
+                    }
+                }
+            }
+        }
+
+
+        function show_upload() {
+            $("#showurl").html("");
+            $("#uploadModal").modal("show");
+        }
+
+        function upload_file() {
+            let formData = new FormData($("#uploadForm")[0]);
+            $("#uploadButton").html("<button class=\"btn btn-white\" disabled>······</button>");
+            $.ajax({
+                url: '/api/upload/',
+                method: 'post',
+                data: formData,
+                dataType: 'JSON',
+                contentType: false,
+                processData: false,
+                success: function (res) {
+                    if (res.status) {
+                        // Style From SMMS
+                        let showImage = `<div id="navTabContent" class="tab-content" style="border:none;">
+                                <div class="tab-pane fade show active" id="imagedetail" role="tabpanel" aria-labelledby="imagedetail-tab">
+                                <fieldset>
+                                    <table style="width:100%;">
+                                        <tbody><tr>
+                                            <td style="width:260px; text-align: center;">
+                                                <a href="${res.data.url}" target="_blank">
+                                                    <img class="lazy" onload="DrawImage(this, 260, 260)" width="260"
+                                                    height="260" src="${res.data.url}"
+                                                    style="max-width: 260px;max-height: 260px;">
+                                                </a>
+                                            </td>
+                                            <td class="padding10" style="text-align:left">
+                                                <div class="dlinput_container">
+                                                    <div class="row">
+                                                        <div class="col">
+                                                            <label class="form-control-label" style="margin-bottom:0">HTML</label>
+                                                            <input class="form-control"
+                                                            type="text" onclick="this.select();"
+                                                            value="<a href=${res.data.url}><img src=${res.data.url}></a>">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="dlinput_container">
+                                                    <div class="row">
+                                                        <div class="col">
+                                                            <label class="form-control-label"  style="margin-bottom:0">BBCode</label>
+                                                            <input class="form-control" type="text" onclick="this.select();" value="[url=${res.data.url}][img]${res.data.url}[/img][/url]">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="dlinput_container">
+                                                    <div class="row">
+                                                        <div class="col">
+                                                            <label class="form-control-label" style="margin-bottom:0">Markdown</label>
+                                                            <input class="form-control"
+                                                            type="text" onclick="this.select();" value="![${res.data.name}](${res.data.url})">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="dlinput_container">
+                                                    <div class="row">
+                                                        <div class="col">
+                                                            <label class="form-control-label" style="margin-bottom:0">Link only</label>
+                                                            <input class="form-control" type="text" onclick="this.select();" value="${res.data.url}">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr></tbody>
+                                    </table>
+                                </fieldset>
+                                </div>
+                            </div>`
+                        $("#showurl").html(showImage);
+                        notyf.success(escapeString(res.msg));
+                        posts.unshift(res.data);
+                        $("#post-number").html(posts.length);
+                        change_page(_page);
+                        $("#uploadButton").html(`<button type="button" class="btn btn-primary" onclick="upload_file()" >上传</button>`);
+                    } else {
+                        notyf.error(res.msg);
+                        $("#uploadButton").html(`<button type="button" class="btn btn-primary" onclick="upload_file()" >上传</button>`);
+                    }
+                },
+                error: function (res) {
+                    notyf.error("网络错误！");
+                    $("#uploadButton").html(`<button type="button" class="btn btn-primary" onclick="upload_file()" >上传</button>`);
+                }
+            })
+        }
+    </script>
+
+    {% block stylesheets %}
+        <style>
+            @media (max-width: 992px) {
+                .tab-pane td {
+                    display: block;
+                    margin: 0 auto;
+                }
+            }
+
+            .padding10 {
+                padding-left: 0;
+            }
+
+            .padding10 {
+                padding-left: 10px;
+            }
+
+            @media (max-width: 768px) {
+                table td {
+                    white-space: nowrap !important;
+                }
+            }
+
+            fieldset {
+                border: 1px solid #d2d6da;
+                border-radius: 10px;
+                padding: 15px 20px;
+            }
+
+            .dark-version fieldset {
+                border: 1px solid #8392ab;
+            }
+        </style>
+    {% endblock stylesheets %}
+{% endblock javascripts %}
