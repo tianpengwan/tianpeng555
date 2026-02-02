@@ -1,3 +1,5 @@
+from django_mongodb_backend.fields import ObjectIdAutoField
+DEFAULT_AUTO_FIELD = 'django_mongodb_backend.fields.ObjectIdAutoField'
 from pathlib import Path
 import os
 import json
