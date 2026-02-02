@@ -1,8 +1,8 @@
-# 核心依赖（强制指定兼容版本）
+# 核心依赖（Django 4.2.27 + djongo 1.3.9）
 Django==4.2.27
-django-mongodb-backend==2.4.0
+djongo==1.3.9  # 替换 django-mongodb-backend，适配 Django 4.2
 
-# 其他依赖（保持原有版本，仅确保兼容）
+# 其他依赖（保留，仅调整 pymongo 版本适配 djongo）
 PyMySQL==1.0.2
 boto3==1.34.44
 requests==2.31.0
@@ -13,7 +13,7 @@ PyYAML==6.0.1
 urllib3==1.26.18
 Markdown==3.5.2
 django-cors-headers==4.1.0
-pymongo>=4.0.0
+pymongo==3.13.0  # djongo 1.3.9 适配 pymongo 3.13.0（降级）
 dnspython==2.2.1
 sqlparse>=0.3.1
 psycopg2-binary==2.9.9
