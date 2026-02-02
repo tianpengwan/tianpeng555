@@ -106,21 +106,23 @@ except:
                 if env == "MONGODB_PASS" and "MONGODB_PASSWORD" in os.environ:
                     continue
                 errors += f"\"{env}\" "
-        DATABASES = {
-            'default': {
-                'ENGINE': 'djongo',
-                'ENFORCE_SCHEMA': False,
-                'NAME': 'django',
-                'CLIENT': {
-                    'host': os.environ.get("MONGODB_HOST"),
-                    'port': int(os.environ.get("MONGODB_PORT")),
-                    'username': os.environ.get("MONGODB_USER") or os.environ.get("MONGODB_USERNAME") or "root",
-                    'password': os.environ.get("MONGODB_PASS") or os.environ.get("MONGODB_PASSWORD"),
-                    'authSource': os.environ.get("MONGODB_DB") or "root",
-                    'authMechanism': 'SCRAM-SHA-1'
-                }
-            }
+        import os  # 务必确保顶部导入了 os 模块
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'djongo',
+        'ENFORCE_SCHEMA': False,  # 关键：关闭 schema 强制校验，适配 MongoDB 无表结构特性
+        'NAME': 'django',  # 你的 MongoDB 数据库名，保持不变即可
+        'CLIENT': {
+            'host': os.environ.get("MONGODB_HOST"),
+            'port': int(os.environ.get("MONGODB_PORT", 27017)),  # 修正1：添加默认值，避免端口为空报错
+            'username': os.environ.get("MONGODB_USER") or os.environ.get("MONGODB_USERNAME") or "root",
+            'password': os.environ.get("MONGODB_PASS") or os.environ.get("MONGODB_PASSWORD") or "",  # 修正2：密码默认空而非 root（root 是用户名，密码为空更合理）
+            'authSource': os.environ.get("MONGODB_DB") or "admin",  # 修正3：authSource 默认是 admin（MongoDB 默认认证库），不是 root
+            'authMechanism': 'SCRAM-SHA-1'
         }
+    }
+}
     elif os.environ.get("PG_HOST") or os.environ.get("POSTGRES_HOST"):  # 使用 PostgreSQL
         print("使用环境变量中的PostgreSQL数据库")
         for env in ["PG_HOST", "PG_PASS"]:
