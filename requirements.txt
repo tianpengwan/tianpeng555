@@ -1,5 +1,8 @@
-Django==4.2.0,<5.0.0
+# Django核心（修正语法，指定兼容版本）
+Django>=4.2.0,<5.0.0
+# MongoDB后端（核心依赖，保留）
 django-mongodb-backend>=2.4.0
+# 其他依赖（调整pymongo版本，删除冲突的djongo5）
 PyMySQL==1.0.2
 boto3==1.34.44
 requests==2.31.0
@@ -9,9 +12,8 @@ html2text==2020.1.16
 PyYAML==6.0.1
 urllib3==1.26.18
 Markdown==3.5.2
-djongo5==1.3.9
 django-cors-headers==4.1.0
-pymongo==3.13.0
+pymongo>=4.0.0  # 升级到兼容版本
 dnspython==2.2.1
 sqlparse==0.2.4
 psycopg2-binary==2.9.9
