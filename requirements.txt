@@ -1,7 +1,7 @@
-# 核心依赖（降低Django版本，适配djongo）
-Django==3.2.25  # 降级到3.2系列（djongo 1.3.7支持）
-sqlparse>=0.3.1
-djongo==1.3.7  # 1.3系列最新版本
+# 核心依赖（兼容 djongo 依赖锁定）
+Django==3.2.25
+sqlparse==0.2.4  # 锁定为 djongo 1.3.7 要求的版本（Django 3.2 兼容）
+djongo==1.3.7
 
 # 其他依赖（保持不变）
 boto3==1.34.44
