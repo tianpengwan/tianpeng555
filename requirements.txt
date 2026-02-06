@@ -1,9 +1,9 @@
-# 核心依赖（仅保留 Django + 基础依赖，移除 MongoDB 相关）
+# 核心依赖
 Django==4.2.27
 sqlparse>=0.3.1
+djongo==1.3.6  # 新增：Django连接MongoDB的驱动（适配Django 4.2）
 
-# 其他非 MongoDB 依赖（保留）
-PyMySQL==1.0.2
+# 其他依赖（保留非数据库相关的）
 boto3==1.34.44
 requests==2.31.0
 PyGithub==2.2.0
@@ -13,8 +13,7 @@ PyYAML==6.0.1
 urllib3==1.26.18
 Markdown==3.5.2
 django-cors-headers==4.1.0
-dnspython==2.2.1
-psycopg2-binary==2.9.9
+dnspython==2.2.1  # 保留：MongoDB连接可能需要的DNS解析依赖
 cryptography==42.0.3
 pyopenssl==24.0.0
 oss2==2.18.4
